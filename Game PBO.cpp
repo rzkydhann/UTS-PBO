@@ -19,10 +19,13 @@ void clearScreen() {
 
 
 class Entity {
-public:
+protected:
     int x, y;
+public:
     Entity(int xPos, int yPos) : x(xPos), y(yPos) {}
     virtual ~Entity() {}
+    int getX() const { return x; }
+    int getY() const { return y; }
 };
 
 
@@ -39,11 +42,13 @@ public:
 
 
 class Bullet : public Entity {
-public:
+private:
     bool active;
+public:
     Bullet() : Entity(-1, -1), active(false) {}
     ~Bullet() { cout << "Bullet destroyed" << endl; }
 
+    bool isActive() const { return active; }
     void shoot(int px) {
         if (!active) {
             x = px;
@@ -51,7 +56,6 @@ public:
             active = true;
         }
     }
-
     void update() {
         if (active) {
             y--;
@@ -62,10 +66,11 @@ public:
 
 
 class Enemy : public Entity {
-public:
-    int moveDelay;
+private:
+    static const int moveDelay;
     int moveCounter;
-    Enemy() : Entity(rand() % width, 0), moveDelay(3), moveCounter(0) {}
+public:
+    Enemy() : Entity(rand() % width, 0), moveCounter(0) {}
     ~Enemy() { cout << "Enemy destroyed" << endl; }
 
     void update() {
@@ -75,13 +80,13 @@ public:
             moveCounter = 0;
         }
     }
-
     void reset() {
         x = rand() % width;
         y = 0;
         moveCounter = 0;
     }
 };
+const int Enemy::moveDelay = 3;
 
 
 class Game {
@@ -107,22 +112,21 @@ public:
             for (int j = 0; j < width; j++) {
                 if (j == 0) cout << "#";
 
-                if (i == enemy.y && j == enemy.x) cout << "X";
+                if (i == enemy.getY() && j == enemy.getX()) cout << "X";
                 else {
                     bool printed = false;
                     for (Bullet &b : bullets) {
-                        if (b.active && i == b.y && j == b.x) {
+                        if (b.isActive() && i == b.getY() && j == b.getX()) {
                             cout << "|";
                             printed = true;
                             break;
                         }
                     }
                     if (!printed) {
-                        if (i == player.y && j == player.x) cout << "^";
+                        if (i == player.getY() && j == player.getX()) cout << "^";
                         else cout << " ";
                     }
                 }
-
                 if (j == width - 1) cout << "#";
             }
             cout << endl;
@@ -142,8 +146,8 @@ public:
                 case 'd': player.move('d'); break;
                 case ' ':
                     for (Bullet &b : bullets) {
-                        if (!b.active) {
-                            b.shoot(player.x);
+                        if (!b.isActive()) {
+                            b.shoot(player.getX());
                             break;
                         }
                     }
@@ -157,14 +161,12 @@ public:
         enemy.update();
         for (Bullet &b : bullets) {
             b.update();
-            if (b.active && b.x == enemy.x && b.y == enemy.y) {
+            if (b.isActive() && b.getX() == enemy.getX() && b.getY() == enemy.getY()) {
                 score++;
-                b.active = false;
                 enemy.reset();
             }
         }
-
-        if (enemy.y >= height - 1) gameOver = true;
+        if (enemy.getY() >= height - 1) gameOver = true;
     }
 
     void run() {
